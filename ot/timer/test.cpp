@@ -29,9 +29,8 @@ std::optional<float> Test::cppr_credit(Split el, Tran rf) const {
 std::optional<float> Test::slack(Split el, Tran rf) const {
   if(_arc._to._at[el][rf] && _rat[el][rf]) {
     return (
-      // yclo
-      el == MIN ? (*_arc._to._at[el][rf]).dist.nominal() - *_rat[el][rf] : 
-                  *_rat[el][rf] - (*_arc._to._at[el][rf]).dist.nominal()
+      el == MIN ? *_arc._to._at[el][rf] - *_rat[el][rf] : 
+                  *_rat[el][rf] - *_arc._to._at[el][rf]
     ) + (
       _cppr_credit[el][rf] ? *_cppr_credit[el][rf] : 0.0f
     );
@@ -43,9 +42,8 @@ std::optional<float> Test::slack(Split el, Tran rf) const {
 std::optional<float> Test::raw_slack(Split el, Tran rf) const {
   if(_arc._to._at[el][rf] && _rat[el][rf]) {
     return (
-      // yclo
-      el == MIN ? (*_arc._to._at[el][rf]).dist.nominal() - *_rat[el][rf] : 
-                  *_rat[el][rf] - (*_arc._to._at[el][rf]).dist.nominal()
+      el == MIN ? *_arc._to._at[el][rf] - *_rat[el][rf] : 
+                  *_rat[el][rf] - *_arc._to._at[el][rf]
     );
   }
   else return std::nullopt;
@@ -114,7 +112,7 @@ void Test::_fprop_rat(float period, bool ideal_clock) {
     if(el == MIN) {
       // PathGuide
       if(!ideal_clock) {
-        _related_at[el][rf] = (*_arc._from._at[fel][frf]).dist.nominal();
+        _related_at[el][rf] = *_arc._from._at[fel][frf];
       }
       else {
         _related_at[el][rf] = 0;
@@ -123,7 +121,7 @@ void Test::_fprop_rat(float period, bool ideal_clock) {
     else {
       // PathGuide
       if(!ideal_clock) {
-        _related_at[el][rf] = (*_arc._from._at[fel][frf]).dist.max() + period;
+        _related_at[el][rf] = *_arc._from._at[fel][frf] + period;
       }
       else {
         _related_at[el][rf] = period;

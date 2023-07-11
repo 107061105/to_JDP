@@ -2,7 +2,6 @@
 #include <ot/timer/arc.hpp>
 #include <ot/timer/net.hpp>
 #include <ot/timer/test.hpp>
-#include <ot/liberty/delay.hpp>
 
 namespace ot {
 
@@ -18,10 +17,7 @@ std::optional<float> PrimaryOutput::rat(Split el, Tran rf) const {
 // Function: slack
 std::optional<float> PrimaryOutput::slack(Split el, Tran rf) const {
   if(_pin._at[el][rf] && _rat[el][rf]) {
-    // yclo
-    // return el == MIN ? *_pin._at[el][rf] - *_rat[el][rf] : *_rat[el][rf] - *_pin._at[el][rf];
-    return el == MIN ? (*_pin._at[el][rf]).dist.min() - *_rat[el][rf] : *_rat[el][rf] - (*_pin._at[el][rf]).dist.max();
-    // yclo: questioable
+    return el == MIN ? *_pin._at[el][rf] - *_rat[el][rf] : *_rat[el][rf] - *_pin._at[el][rf];
   }
   else {
     return std::nullopt;
@@ -62,20 +58,12 @@ void PrimaryInput::_scale_time(float s) {
 
 // ------------------------------------------------------------------------------------------------
 
-// // Constructor
-// Pin::At::At(Arc* a, Split el, Tran rf, float v) : 
-//   pi_arc {a}, 
-//   pi_el  {el}, 
-//   pi_rf  {rf}, 
-//   numeric  {v} {
-// }
-
 // Constructor
-Pin::At::At(Arc* a, Split el, Tran rf, Statisical_delay v) : 
+Pin::At::At(Arc* a, Split el, Tran rf, float v) : 
   pi_arc {a}, 
   pi_el  {el}, 
   pi_rf  {rf}, 
-  dist   {v} {
+  numeric  {v} {
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -91,20 +79,11 @@ Pin::Slew::Slew(Arc* a, Split el, Tran rf, float v) :
 // ------------------------------------------------------------------------------------------------
 
 // Constructor
-// Pin::Rat::Rat(Arc* a, Split el, Tran rf, float v) : 
-//   pi_arc  {a}, 
-//   pi_el   {el}, 
-//   pi_rf   {rf}, 
-//   numeric {v} {
-// }
-
-// yclo
-// Constructor
-Pin::Rat::Rat(Arc* a, Split el, Tran rf, Statisical_delay v) : 
+Pin::Rat::Rat(Arc* a, Split el, Tran rf, float v) : 
   pi_arc  {a}, 
   pi_el   {el}, 
   pi_rf   {rf}, 
-  dist {v} {
+  numeric {v} {
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -254,23 +233,12 @@ Arc* Pin::_find_fanout(Pin& to) {
 }
 
 // Function: at
-// std::optional<float> Pin::at(Split el, Tran rf) const {
-//   return _at[el][rf];
-// }
-
-// Function: rat
-// std::optional<float> Pin::rat(Split el, Tran rf) const {
-//   return _rat[el][rf];
-// }
-
-// yclo
-// Function: at
-std::optional<Statisical_delay> Pin::at(Split el, Tran rf) const {
+std::optional<float> Pin::at(Split el, Tran rf) const {
   return _at[el][rf];
 }
 
 // Function: rat
-std::optional<Statisical_delay> Pin::rat(Split el, Tran rf) const {
+std::optional<float> Pin::rat(Split el, Tran rf) const {
   return _rat[el][rf];
 }
 
@@ -280,36 +248,17 @@ std::optional<float> Pin::slew(Split el, Tran rf) const {
 }
 
 // Function: slack
-// std::optional<float> Pin::slack(Split el, Tran rf) const {
-//   if(_at[el][rf] && _rat[el][rf]) {
-//     return el == MIN ? *_at[el][rf] - *_rat[el][rf] : *_rat[el][rf] - *_at[el][rf];
-//   }
-//   else return std::nullopt;
-// }
-
-// yclo
-// Function: slack
-std::optional<Statisical_delay> Pin::slack(Split el, Tran rf) const {
+std::optional<float> Pin::slack(Split el, Tran rf) const {
   if(_at[el][rf] && _rat[el][rf]) {
-    return el == MIN ? _at[el][rf].value().dist - _rat[el][rf].value().dist : 
-                       _rat[el][rf].value().dist - _at[el][rf].value().dist;
+    return el == MIN ? *_at[el][rf] - *_rat[el][rf] : *_rat[el][rf] - *_at[el][rf];
   }
   else return std::nullopt;
 }
 
 // Function: _delta_at
-// std::optional<float> Pin::_delta_at(Split lel, Tran lrf, Split rel, Tran rrf) const {
-//   if(_at[lel][lrf] && _at[rel][rrf]) {
-//     return *_at[lel][lrf] - *_at[rel][rrf];
-//   }
-//   else return std::nullopt;
-// }
-
-// yclo
-// Function: _delta_at
-std::optional<Statisical_delay> Pin::_delta_at(Split lel, Tran lrf, Split rel, Tran rrf) const {
+std::optional<float> Pin::_delta_at(Split lel, Tran lrf, Split rel, Tran rrf) const {
   if(_at[lel][lrf] && _at[rel][rrf]) {
-    return _at[lel][lrf].value().dist - _at[rel][rrf].value().dist;
+    return *_at[lel][lrf] - *_at[rel][rrf];
   }
   else return std::nullopt;
 }
@@ -323,18 +272,9 @@ std::optional<float> Pin::_delta_slew(Split lel, Tran lrf, Split rel, Tran rrf) 
 }
 
 // Function: _delta_rat
-// std::optional<float> Pin::_delta_rat(Split lel, Tran lrf, Split rel, Tran rrf) const {
-//   if(_rat[lel][lrf] && _rat[rel][rrf]) {
-//     return *_rat[lel][lrf] - *_rat[rel][rrf];
-//   }
-//   else return std::nullopt;
-// }
-
-// yclo
-// Function: _delta_rat
-std::optional<Statisical_delay> Pin::_delta_rat(Split lel, Tran lrf, Split rel, Tran rrf) const {
+std::optional<float> Pin::_delta_rat(Split lel, Tran lrf, Split rel, Tran rrf) const {
   if(_rat[lel][lrf] && _rat[rel][rrf]) {
-    return _rat[lel][lrf].value().dist - _rat[rel][rrf].value().dist;
+    return *_rat[lel][lrf] - *_rat[rel][rrf];
   }
   else return std::nullopt;
 }
@@ -401,7 +341,6 @@ void Pin::_relax_slew(Arc* arc, Split fel, Tran frf, Split tel, Tran trf, float 
   };
 }
 
-/*
 // Procedure: _relax_at
 // Update the arrival time of the node from a given fanin node.
 void Pin::_relax_at(Arc* arc, Split fel, Tran frf, Split tel, Tran trf, float val) {
@@ -435,91 +374,6 @@ void Pin::_relax_rat(Arc* arc, Split fel, Tran frf, Split tel, Tran trf, float v
     case MAX:
       if(!_rat[fel][frf] || val < *_rat[fel][frf]) {
         _rat[fel][frf].emplace(arc, tel, trf, val);
-      }
-    break;
-  };
-}
-*/
-
-// yclo
-// Procedure: _relax_at
-// Update the arrival time of the node from a primary input.
-void Pin::_relax_at(Arc* arc, Split fel, Tran frf, Split tel, Tran trf, float val) {
-
-  Statisical_delay dist = Statisical_delay(val, 0.0f, 0.0f, 0.0f);
-  
-  switch (tel) {
-    case MIN:
-      if(!_at[tel][trf] || dist.min() < (*_at[tel][trf]).dist.min()) {
-        _at[tel][trf].emplace(arc, fel, frf, dist);
-      }
-    break;
-    case MAX:
-      if(!_at[tel][trf] || dist.max() > (*_at[tel][trf]).dist.max()) {
-        _at[tel][trf].emplace(arc, fel, frf, dist);
-      }
-    break;
-  }
-}
-
-// yclo
-// Procedure: _relax_at
-// Update the arrival time of the node from a given fanin node.
-void Pin::_relax_at(Arc* arc, Split fel, Tran frf, Split tel, Tran trf, Statisical_delay dist) {
-  
-  switch (tel) {
-    case MIN:
-      if(!_at[tel][trf] || dist.min() < (*_at[tel][trf]).dist.min()) {
-        _at[tel][trf].emplace(arc, fel, frf, dist);
-      }
-    break;
-    case MAX:
-      if(!_at[tel][trf] || dist.max() > (*_at[tel][trf]).dist.max()) {
-        _at[tel][trf].emplace(arc, fel, frf, dist);
-      }
-    break;
-  }
-}
-
-// yclo
-// Procedure: _relax_rat
-// Update the arrival time of the primary output
-void Pin::_relax_rat(Arc* arc, Split fel, Tran frf, Split tel, Tran trf, float val) {
-
-  Statisical_delay dist = Statisical_delay(val, 0.0f, 0.0f, 0.0f);
-
-  switch(fel) {
-
-    case MIN:
-      if(!_rat[fel][frf] || dist.max() > (*_rat[fel][frf]).dist.max()) {
-        _rat[fel][frf].emplace(arc, tel, trf, dist);
-      }
-    break;
-
-    case MAX:
-      if(!_rat[fel][frf] || dist.min() < (*_rat[fel][frf]).dist.min()) {
-        _rat[fel][frf].emplace(arc, tel, trf, dist);
-      }
-    break;
-  };
-}
-
-// yclo
-// Procedure: _relax_rat
-// Update the arrival time of the node
-void Pin::_relax_rat(Arc* arc, Split fel, Tran frf, Split tel, Tran trf, Statisical_delay dist) {
-
-  switch(fel) {
-
-    case MIN:
-      if(!_rat[fel][frf] || dist.max() > (*_rat[fel][frf]).dist.max()) {
-        _rat[fel][frf].emplace(arc, tel, trf, dist);
-      }
-    break;
-
-    case MAX:
-      if(!_rat[fel][frf] || dist.min() < (*_rat[fel][frf]).dist.min()) {
-        _rat[fel][frf].emplace(arc, tel, trf, dist);
       }
     break;
   };

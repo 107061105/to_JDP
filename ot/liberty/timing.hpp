@@ -2,7 +2,6 @@
 #define OT_LIBERTY_TIMING_HPP_
 
 #include <ot/liberty/lut.hpp>
-#include <ot/liberty/delay.hpp>
 
 namespace ot {
 
@@ -104,13 +103,7 @@ struct Timing {
   std::optional<Lut> rise_transition;       
   std::optional<Lut> fall_transition;       
   std::optional<Lut> rise_constraint;       
-  std::optional<Lut> fall_constraint;
-  std::optional<Lut> rise_stdev;
-  std::optional<Lut> fall_stdev;  
-  std::optional<Lut> rise_skew;
-  std::optional<Lut> fall_skew;
-  std::optional<Lut> rise_meanshift;
-  std::optional<Lut> fall_meanshift;
+  std::optional<Lut> fall_constraint;       
 
   bool is_combinational() const;
   bool is_constraint() const; 
@@ -128,15 +121,8 @@ struct Timing {
   void scale_capacitance(float);
 
   std::optional<float> delay(Tran, Tran, float, float) const;
-
-  // yclo
-  std::optional<Dist> s_delay(Tran, Tran, float, float) const;
-  std::optional<float> stdev(Tran, Tran, float, float) const;
-  std::optional<float> skew(Tran, Tran, float, float) const;
-  std::optional<float> meanshift(Tran, Tran, float, float) const;
   std::optional<float> slew(Tran, Tran, float, float) const;
   std::optional<float> constraint(Tran, Tran, float, float) const;
-  
 };
 
 std::ostream& operator << (std::ostream&, const Timing&);

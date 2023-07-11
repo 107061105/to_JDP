@@ -73,17 +73,9 @@ void Arc::_remap_timing(Split el, const Timing& timing) {
 }
 
 // Procedure: _reset_delay
-// void Arc::_reset_delay() {
-//   FOR_EACH_EL_RF_RF(el, frf, trf) {
-//     _delay[el][frf][trf].reset();
-//   }
-// }
-
-// yclo
-// Procedure: _reset_s_delay
-void Arc::_reset_s_delay() {
+void Arc::_reset_delay() {
   FOR_EACH_EL_RF_RF(el, frf, trf) {
-    _s_delay[el][frf][trf].reset();
+    _delay[el][frf][trf].reset();
   }
 }
 
@@ -118,39 +110,7 @@ void Arc::_fprop_slew() {
 }
 
 // Procedure: _fprop_delay
-// void Arc::_fprop_delay() {
-  
-//   if(_has_state(LOOP_BREAKER)) {
-//     return;
-//   }
-
-//   std::visit(Functors{
-//     // Case 1: Net arc
-//     [this] (Net* net) {
-//       FOR_EACH_EL_RF(el, rf) {
-//         _delay[el][rf][rf] = net->_delay(el, rf, _to);
-//       }
-//     },
-//     // Case 2: Cell arc
-//     [this] (TimingView tv) {
-//       FOR_EACH_EL_RF_RF_IF(el, frf, trf, (tv[el] && _from._slew[el][frf])) {
-//         auto lc = (_to._net) ? _to._net->_load(el, trf) : 0.0f;
-//         auto si = *_from._slew[el][frf];
-//         _delay[el][frf][trf] = tv[el]->delay(frf, trf, si, lc);
-//         // if ( _delay[el][frf][trf].has_value()) {
-//         //   OT_LOGD("Arc: ", name(),  " ", el, " ", frf, " ", trf, "\n", 
-//         //           "load: ", lc, " slew:", si, " delay: ", _delay[el][frf][trf].value(), "\n");
-//         // } 
-//         // else {
-//         //   OT_LOGD("Arc: ", name(),  " don't have value!!!\n");
-//         // }
-//       }
-//     }
-//   }, _handle);
-// }
-
-// Procedure: _fprop_s_delay
-void Arc::_fprop_s_delay() {
+void Arc::_fprop_delay() {
   
   if(_has_state(LOOP_BREAKER)) {
     return;
@@ -160,7 +120,7 @@ void Arc::_fprop_s_delay() {
     // Case 1: Net arc
     [this] (Net* net) {
       FOR_EACH_EL_RF(el, rf) {
-        _s_delay[el][rf][rf] = net->_delay(el, rf, _to);
+        _delay[el][rf][rf] = net->_delay(el, rf, _to);
       }
     },
     // Case 2: Cell arc
@@ -168,17 +128,7 @@ void Arc::_fprop_s_delay() {
       FOR_EACH_EL_RF_RF_IF(el, frf, trf, (tv[el] && _from._slew[el][frf])) {
         auto lc = (_to._net) ? _to._net->_load(el, trf) : 0.0f;
         auto si = *_from._slew[el][frf];
-        
-        _s_delay[el][frf][trf] = tv[el]->s_delay(frf, trf, si, lc);
-
-        // if ( _s_delay[el][frf][trf].has_value()) {
-        //   OT_LOGD("Arc: ", name(),  " ", el, " ", frf, " ", trf, "\n", " load: ", lc, " slew:", si, "\n",
-        //           " nominal: ",   _s_delay[el][frf][trf].value().nominal(),   "\n",
-        //           " meanshift: ", _s_delay[el][frf][trf].value().meanshift(), "\n",
-        //           " std: ",       _s_delay[el][frf][trf].value().stdev(),     "\n",
-        //           " skew: ",      _s_delay[el][frf][trf].value().skew(),      "\n"
-        //          );
-        // }
+        _delay[el][frf][trf] = tv[el]->delay(frf, trf, si, lc);
       }
     }
   }, _handle);
@@ -191,24 +141,8 @@ void Arc::_fprop_at() {
     return;
   }
 
-  FOR_EACH_EL_RF_RF_IF(el, frf, trf, _from._at[el][frf] && _s_delay[el][frf][trf]) {
-    _to._relax_at(this, el, frf, el, trf, (*_from._at[el][frf]).dist + *_s_delay[el][frf][trf]);
-
-    OT_LOGD(" ", el, " ", frf, " ", trf, "\n",
-            "From Pin: ", _from._name, "\n",
-            " mean:  ", (*_from._at[el][frf]).dist.get_mean(),
-            " std:  ",  (*_from._at[el][frf]).dist.get_std(),
-            " skew: ",  (*_from._at[el][frf]).dist.get_skew(), "\n",
-
-            // "Arc: ", name(), " \n",
-            // " mean:  ", (*_s_delay[el][frf][trf]).get_mean(),    
-            // " std:  ",  (*_s_delay[el][frf][trf]).get_std(),
-            // " skew: ",  (*_s_delay[el][frf][trf]).get_skew(), "\n",
-
-            "To Pin: ", _to._name, " \n",
-            " mean:  ", (*_to._at[el][trf]).dist.get_mean(),
-            " std:  ",  (*_to._at[el][trf]).dist.get_std(),
-            " skew: ",  (*_to._at[el][trf]).dist.get_skew(), "\n");
+  FOR_EACH_EL_RF_RF_IF(el, frf, trf, _from._at[el][frf] && _delay[el][frf][trf]) {
+    _to._relax_at(this, el, frf, el, trf, *_delay[el][frf][trf] + *_from._at[el][frf]);
   }
 }
 
@@ -222,8 +156,8 @@ void Arc::_bprop_rat() {
   std::visit(Functors{
     // Case 1: Net arc
     [this] (Net* net) {
-      FOR_EACH_EL_RF_IF(el, rf, _to._rat[el][rf] && _s_delay[el][rf][rf]) {
-        _from._relax_rat(this, el, rf, el, rf, _to._rat[el][rf].value().dist - *_s_delay[el][rf][rf]);
+      FOR_EACH_EL_RF_IF(el, rf, _to._rat[el][rf] && _delay[el][rf][rf]) {
+        _from._relax_rat(this, el, rf, el, rf, *_to._rat[el][rf] - *_delay[el][rf][rf]);
       }
     },
     // Case 2: Cell arc
@@ -233,34 +167,32 @@ void Arc::_bprop_rat() {
         
         // propagation arc
         if(!tv[el]->is_constraint()) {
-          if(!_to._rat[el][trf] || !_s_delay[el][frf][trf]) {
+          if(!_to._rat[el][trf] || !_delay[el][frf][trf]) {
             continue;
           }
-          _from._relax_rat(this, el, frf, el, trf, _to._rat[el][trf].value().dist - *_s_delay[el][frf][trf]);
+          _from._relax_rat(this, el, frf, el, trf, *_to._rat[el][trf] - *_delay[el][frf][trf]);
         }
         // constraint arc
         else {
-          // TODO: yclo
-          OT_LOG("Constrait Mode Not Implement yet!!");
           
-          // if(!tv[el]->is_transition_defined(frf, trf)) {
-          //   continue;
-          // }
+          if(!tv[el]->is_transition_defined(frf, trf)) {
+            continue;
+          }
 
-          // if(el == MIN) {
-          //   auto at = _from._at[MAX][frf];
-          //   auto slack = _to.slack(MIN, trf);
-          //   if(at && slack) {
-          //     _from._relax_rat(this, MAX, frf, MIN, trf, at.value().dist + *slack);
-          //   }
-          // }
-          // else {
-          //   auto at = _from._at[MIN][frf];
-          //   auto slack = _to.slack(MAX, trf);
-          //   if(at && slack) {
-          //     _from._relax_rat(this, MIN, frf, MAX, trf, at.value().dist - *slack);
-          //   }
-          // }
+          if(el == MIN) {
+            auto at = _from._at[MAX][frf];
+            auto slack = _to.slack(MIN, trf);
+            if(at && slack) {
+              _from._relax_rat(this, MAX, frf, MIN, trf, *at + *slack);
+            }
+          }
+          else {
+            auto at = _from._at[MIN][frf];
+            auto slack = _to.slack(MAX, trf);
+            if(at && slack) {
+              _from._relax_rat(this, MIN, frf, MAX, trf, *at - *slack);
+            }
+          }
         }
       }
     }

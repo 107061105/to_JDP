@@ -158,9 +158,7 @@ void Timer::_spur(PfxtCache& pfxt, const PfxtNode& pfx, const PathGuide* pg) con
 
     for(auto arc : upin->_fanout) {
         
-      // yclo
-      // FOR_EACH_RF_IF(vrf, arc->_delay[el][urf][vrf]) {
-      FOR_EACH_RF_IF(vrf, arc->_s_delay[el][urf][vrf]) {
+      FOR_EACH_RF_IF(vrf, arc->_delay[el][urf][vrf]) {
 
         // skip if the edge goes outside the sfxt
         auto v = _encode_pin(arc->_to, vrf);
@@ -178,9 +176,8 @@ void Timer::_spur(PfxtCache& pfxt, const PfxtNode& pfx, const PathGuide* pg) con
         if(_encode_arc(*arc, urf, vrf) == *pfxt._sfxt.__link[u]) {
           continue;
         }
-        // yclo
-        // auto w = (el == MIN) ? *arc->_delay[el][urf][vrf] : -(*arc->_delay[el][urf][vrf]);
-        float w = (el == MIN) ? (*arc->_s_delay[el][urf][vrf]).nominal() : -(*arc->_s_delay[el][urf][vrf]).nominal();
+
+        auto w = (el == MIN) ? *arc->_delay[el][urf][vrf] : -(*arc->_delay[el][urf][vrf]);
         auto s = *pfxt._sfxt.__dist[v] + w - *pfxt._sfxt.__dist[u] + pfx.slack;
 
         // Set slack uppper bound to 40000 for leon3mp_iccad in tau 2018 contest 

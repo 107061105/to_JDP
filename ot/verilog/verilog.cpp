@@ -78,10 +78,6 @@ Module read_verilog(const std::filesystem::path& path) {
   
   auto tokens = tokenize(path, delimiters, exceptions);
 
-  for (const auto& token : tokens) {
-   std::cout << token << std::endl;
-  }
-
   // Set up the iterator
   auto itr = tokens.begin();
   auto end = tokens.end();
@@ -95,10 +91,6 @@ Module read_verilog(const std::filesystem::path& path) {
       OT_LOGF("syntax error in module name");
     }
     module.name = std::move(*itr);
-  }
-
-  for (auto token: tokens) {
-    OT_LOGD("   Token: ", token);
   }
 
   while(++itr != end && *itr != ";") {
@@ -115,18 +107,21 @@ Module read_verilog(const std::filesystem::path& path) {
       break;
     }
     else if(*itr == "input") {
-      itr++; // "["
-      if (*itr == "[") {
-        itr++; // bus size
-        int bus_size = std::stoi(*itr);
+      if (*(++itr) == "[") {
+        std::string bus_buffer = "";
+        while (*(++itr) != ":") { // get bus size
+          bus_buffer += *(itr);
+        }
+        int bus_size = std::stoi(bus_buffer);
         if (bus_size <= 0) OT_LOGE("Bus size <= 0!!");
-        itr++; // ":"
-        itr++; // "0"
-        if (*itr != "0") OT_LOGE("LSB is not 0!!");
+        if (*(++itr) != "0") {
+          OT_LOGE("LSB is not 0!!");
+          bus_size -= std::stoi(*itr);
+        }
         itr++; // "]"
         itr++; // input name
         for (int bus_idx = bus_size; bus_idx >= 0; bus_idx--) {
-          std::string input_name = *itr + "_" + std::to_string(bus_idx);
+          std::string input_name = *itr + "[" + std::to_string(bus_idx) + "]";
           OT_LOGD("ADD input: ", input_name);
           module.inputs.push_back(input_name);
         }
@@ -145,23 +140,29 @@ Module read_verilog(const std::filesystem::path& path) {
       // }
     }
     else if(*itr == "output") {
-      itr++; // "["
-      if (*itr == "[") {
-        itr++; // bus size
-        int bus_size = std::stoi(*itr);
-        if (bus_size <= 0) OT_LOGE("Bus size <= 0!!");
-        itr++; // ":"
-        itr++; // "0"
-        if (*itr != "0") OT_LOGE("LSB is not 0!!");
+      if (*(++itr) == "[") {
+        std::string bus_buffer = "";
+        while (*(++itr) != ":") { // get bus size
+          bus_buffer += *(itr);
+        }
+        int bus_size = std::stoi(bus_buffer);
+        if (bus_size <= 0) {
+          OT_LOGE("Bus size <= 0!!");
+        }
+        if (*(++itr) != "0") {
+          OT_LOGE("LSB is not 0!!");
+          bus_size -= std::stoi(*itr);
+        }
         itr++; // "]"
-        itr++; // input name
+        itr++; // output name
         for (int bus_idx = bus_size; bus_idx >= 0; bus_idx--) {
-          std::string output_name = *itr + "_" + std::to_string(bus_idx);
+          std::string output_name = *itr + "[" + std::to_string(bus_idx) + "]";
           OT_LOGD("ADD output: ", output_name);
           module.outputs.push_back(output_name);
         }
         itr++; // ";"
-      } else {
+      } 
+      else {
         while(itr != end && *itr != ";") {
           OT_LOGD("ADD output: ", *itr);
           module.outputs.push_back(std::move(*itr));
@@ -174,23 +175,29 @@ Module read_verilog(const std::filesystem::path& path) {
       // }
     }
     else if(*itr == "wire") {
-      itr++; // "["
-      if (*itr == "[") {
-        itr++; // bus size
-        int bus_size = std::stoi(*itr);
-        if (bus_size <= 0) OT_LOGE("Bus size <= 0!!");
-        itr++; // ":"
-        itr++; // "0"
-        if (*itr != "0") OT_LOGE("LSB is not 0!!");
+      if (*(++itr) == "[") {
+        std::string bus_buffer = "";
+        while (*(++itr) != ":") { // get bus size
+          bus_buffer += *(itr);
+        }
+        int bus_size = std::stoi(bus_buffer);
+        if (bus_size <= 0) {
+          OT_LOGE("Bus size <= 0!!");
+        }
+        if (*(++itr) != "0") {
+          OT_LOGE("LSB is not 0!!");
+          bus_size -= std::stoi(*itr);
+        }
         itr++; // "]"
-        itr++; // input name
+        itr++; // output name
         for (int bus_idx = bus_size; bus_idx >= 0; bus_idx--) {
-          std::string wire_name = *itr + "_" + std::to_string(bus_idx);
-          OT_LOGD("ADD wire: ", wire_name);
+          std::string wire_name = *itr + "[" + std::to_string(bus_idx) + "]";
+          OT_LOGD("ADD output: ", wire_name);
           module.wires.push_back(wire_name);
         }
         itr++; // ";"
-      } else {
+      } 
+      else {
         while(itr != end && *itr != ";") {
           OT_LOGD("ADD wire: ", *itr);
           module.wires.push_back(std::move(*itr));
@@ -231,7 +238,7 @@ Module read_verilog(const std::filesystem::path& path) {
       //   }
       //   else {
       //     net = str;
-      //     OT_LOGE(inst.name, "  ", cellpin, "  ", net);
+      //     OT_LOGE("Instance: ", inst.name, ", Cellpin: ", cellpin, ", Net:", net);
       //     inst.cellpin2net[cellpin] = net;
       //     inst.net2cellpin[net] = cellpin;
       //   }
@@ -266,12 +273,15 @@ Module read_verilog(const std::filesystem::path& path) {
         }
         else {
           if (*(++l_itr) == "[") {
-            net = str + "_" + *(++l_itr);
-            l_itr++;
+            net = str + "[";
+            while (*(++l_itr) != "]") {
+              net += *l_itr;
+            }
+            net += *l_itr;
           } else {
             net = str;
           }
-          OT_LOGE(inst.name, "  ", cellpin, "  ", net);
+          OT_LOGE("Instance: ", inst.name, ", Cellpin: ", cellpin, ", Net:", net);
           inst.cellpin2net[cellpin] = net;
           inst.net2cellpin[net] = cellpin;
         }
@@ -293,5 +303,7 @@ Module read_verilog(const std::filesystem::path& path) {
   
   return module;
 }
+
+
 
 };  // end of namespace ot. -----------------------------------------------------------------------

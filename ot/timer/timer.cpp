@@ -739,17 +739,12 @@ void Timer::_fprop_delay(Pin& pin) {
 
   // clear delay
   for(auto arc : pin._fanin) {
-    // arc->_reset_delay();
-    // yclo
-    arc->_reset_s_delay();
+    arc->_reset_delay();
   }
 
   // Compute the delay from its fanin.
   for(auto arc : pin._fanin) {
-    // OT_LOGD("Pin: ", pin.name(), "\n");
-    // arc->_fprop_delay();
-    // yclo
-    arc->_fprop_s_delay();
+    arc->_fprop_delay();
   }
 }
 
@@ -1340,22 +1335,10 @@ std::optional<float> Timer::report_at(const std::string& name, Split m, Tran t) 
 }
 
 // Function: _report_at
-// std::optional<float> Timer::_report_at(const std::string& name, Split m, Tran t) {
-//   _update_timing();
-//   if(auto itr = _pins.find(name); itr != _pins.end() && itr->second._at[m][t]) {
-//     return itr->second._at[m][t]->numeric;
-//   }
-//   else return std::nullopt;
-// }
-
-// yclo
-// Function: _report_at
 std::optional<float> Timer::_report_at(const std::string& name, Split m, Tran t) {
   _update_timing();
   if(auto itr = _pins.find(name); itr != _pins.end() && itr->second._at[m][t]) {
-    // return itr->second._at[m][t]->numeric;
-    // yclo
-    return itr->second._at[m][t]->dist.nominal();
+    return itr->second._at[m][t]->numeric;
   }
   else return std::nullopt;
 }
@@ -1371,9 +1354,7 @@ std::optional<float> Timer::report_rat(const std::string& name, Split m, Tran t)
 std::optional<float> Timer::_report_rat(const std::string& name, Split m, Tran t) {
   _update_timing();
   if(auto itr = _pins.find(name); itr != _pins.end() && itr->second._at[m][t]) {
-    // return itr->second._rat[m][t];
-    // yclo
-    return itr->second._rat[m][t]->dist.nominal();;
+    return itr->second._rat[m][t];
   }
   else return std::nullopt;
 }
@@ -1404,9 +1385,7 @@ std::optional<float> Timer::report_slack(const std::string& pin, Split m, Tran t
 std::optional<float> Timer::_report_slack(const std::string& pin, Split m, Tran t) {
   _update_timing();
   if(auto itr = _pins.find(pin); itr != _pins.end()) {
-    // return itr->second.slack(m, t);
-    // yclo
-    return (*itr->second.slack(m, t)).nominal();
+    return itr->second.slack(m, t);
   }
   else return std::nullopt;
 }
@@ -1568,7 +1547,6 @@ void Timer::_reset_level(PathGuide *pg) {
 // Procedure: report_timing_batch 
 // This function processes all path queries in a given file in parallel
 std::vector<PathSet> Timer::report_timing_batch(std::filesystem::path path) {
-
   std::scoped_lock lock(_mutex);
 
   std::ifstream ifs(path);

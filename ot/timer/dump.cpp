@@ -239,9 +239,7 @@ void Timer::_dump_slack(std::ostream& os) const {
       
       FOR_EACH_EL_RF(el, rf) {
         os << std::setw(10);
-        // if(auto slack = pin.slack(el, rf); slack) os << *slack;
-        // yclo
-        if(auto slack = pin.slack(el, rf); slack) os << (*slack).nominal();
+        if(auto slack = pin.slack(el, rf); slack) os << *slack;
         else os << "n/a";
         os << "  ";
       }
@@ -283,8 +281,7 @@ void Timer::_dump_at(std::ostream& os) const {
       
       FOR_EACH_EL_RF(el, rf) {
         os << std::setw(10);
-        // if(auto at = pin.at(el, rf); at) os << *at;
-        if(auto at = pin.at(el, rf); at) os << (*at).nominal();
+        if(auto at = pin.at(el, rf); at) os << *at;
         else os << "n/a";
         os << "  ";
       }
@@ -327,7 +324,7 @@ void Timer::_dump_rat(std::ostream& os) const {
       
       FOR_EACH_EL_RF(el, rf) {
         os << std::setw(10);
-        if(auto rat = pin.rat(el, rf); rat) os << (*rat).nominal();
+        if(auto rat = pin.rat(el, rf); rat) os << *rat;
         else os << "n/a";
         os << "  ";
       }

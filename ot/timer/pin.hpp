@@ -2,7 +2,6 @@
 #define OT_TIMER_PIN_HPP_
 
 #include <ot/liberty/celllib.hpp>
-#include <ot/liberty/delay.hpp>
 
 namespace ot {
 
@@ -75,14 +74,9 @@ class Pin {
     Arc*  pi_arc {nullptr}; 
     Split pi_el;
     Tran  pi_rf;
-    // float numeric;
-
-    // At(Arc*, Split, Tran, float);
-    // yclo
-    Statisical_delay dist;
-    At(Arc*, Split, Tran, Statisical_delay);
-    inline operator Statisical_delay () const;
-
+    float numeric;
+    At(Arc*, Split, Tran, float);
+    inline operator float () const;
     inline auto pi() const;
   };
   
@@ -102,15 +96,9 @@ class Pin {
     Arc*  pi_arc {nullptr};
     Split pi_el;
     Tran  pi_rf;
-    // float numeric;
-    // Rat(Arc*, Split, Tran, float);
-    // inline operator float () const;
-
-    // yclo
-    Statisical_delay dist;
-    Rat(Arc*, Split, Tran, Statisical_delay);
-    inline operator Statisical_delay () const;
-
+    float numeric;
+    Rat(Arc*, Split, Tran, float);
+    inline operator float () const;
     inline auto pi() const;
   };
 
@@ -151,13 +139,9 @@ class Pin {
     bool has_self_loop() const;
 
     std::optional<float> slew(Split, Tran) const;
-    // std::optional<float> at(Split, Tran) const;
-    // std::optional<float> rat(Split, Tran) const;
-    // std::optional<float> slack(Split, Tran) const;
-    // yclo
-    std::optional<Statisical_delay> at(Split, Tran) const;
-    std::optional<Statisical_delay> rat(Split, Tran) const;
-    std::optional<Statisical_delay> slack(Split, Tran) const;
+    std::optional<float> at(Split, Tran) const;
+    std::optional<float> rat(Split, Tran) const;
+    std::optional<float> slack(Split, Tran) const;
 
     float cap(Split, Tran) const;
 
@@ -206,11 +190,8 @@ class Pin {
     void _reset_at();
     void _reset_rat();
     void _relax_slew(Arc*, Split, Tran, Split, Tran, float);
-    // yclo
-    void _relax_at(Arc*, Split, Tran, Split, Tran, float);  // for primary input
-    void _relax_rat(Arc*, Split, Tran, Split, Tran, float); // for primary output
-    void _relax_at(Arc*, Split, Tran, Split, Tran, Statisical_delay);
-    void _relax_rat(Arc*, Split, Tran, Split, Tran, Statisical_delay);
+    void _relax_at(Arc*, Split, Tran, Split, Tran, float);
+    void _relax_rat(Arc*, Split, Tran, Split, Tran, float);
     void _insert_state(int);
     void _remove_state(int = 0);
     
@@ -220,26 +201,16 @@ class Pin {
     inline PrimaryOutput* _primary_output();
     inline PrimaryInput* _primary_input();
     
+    std::optional<float> _delta_at(Split, Tran, Split, Tran) const;
     std::optional<float> _delta_slew(Split, Tran, Split, Tran) const;
-    // std::optional<float> _delta_at(Split, Tran, Split, Tran) const;
-    // std::optional<float> _delta_rat(Split, Tran, Split, Tran) const;
-    // yclo
-    std::optional<Statisical_delay> _delta_at(Split, Tran, Split, Tran) const;
-    std::optional<Statisical_delay> _delta_rat(Split, Tran, Split, Tran) const;
-
+    std::optional<float> _delta_rat(Split, Tran, Split, Tran) const;
 }; 
 
 // ------------------------------------------------------------------------------------------------
 
-// // Operator
-// inline Pin::At::operator float () const { 
-//   return numeric; 
-// }
-
-// yclo
 // Operator
-inline Pin::At::operator Statisical_delay () const { 
-  return dist; 
+inline Pin::At::operator float () const { 
+  return numeric; 
 }
 
 // Function: pi
@@ -262,14 +233,8 @@ inline auto Pin::Slew::pi() const {
 // ------------------------------------------------------------------------------------------------
 
 // Operator
-// inline Pin::Rat::operator float () const { 
-//   return numeric; 
-// }
-
-// yclo
-// Operator
-inline Pin::Rat::operator Statisical_delay () const {
-  return dist;
+inline Pin::Rat::operator float () const { 
+  return numeric; 
 }
 
 // Function: pi
@@ -350,4 +315,9 @@ inline size_t Pin::num_fanouts() const {
 };  // end of namespace ot. -----------------------------------------------------------------------
 
 #endif
+
+
+
+
+
 
