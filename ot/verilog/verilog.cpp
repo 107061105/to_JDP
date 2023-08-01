@@ -112,12 +112,16 @@ Module read_verilog(const std::filesystem::path& path) {
     }
     else if(*itr == "input") {
       if (auto token = *(++itr); token[0] == '[') {
-        int bus_size = std::stoi(token.substr(1));
-        if (bus_size <= 0) {
-          OT_LOGE("Bus size <= 0!!");
+        int bus_MSB = std::stoi(token.substr(1));
+        int bus_LSB = 0;
+        itr++;
+        if (auto LSB = *(++itr); LSB != "0]") {
+          int found = LSB.rfind("]");
+          bus_LSB = std::stoi(LSB.substr(0, found));
+          assert(bus_LSB > 0);
         }
-        itr++; itr++; itr++; // ":", "0]", output name
-        for (int bus_idx = bus_size; bus_idx >= 0; bus_idx--) {
+        itr++; // output name
+        for (int bus_idx = bus_MSB; bus_idx >= bus_LSB; bus_idx--) {
           std::string input_name = *itr + "[" + std::to_string(bus_idx) + "]";
           OT_LOGD("ADD input: ", input_name);
           module.inputs.push_back(input_name);
@@ -134,12 +138,16 @@ Module read_verilog(const std::filesystem::path& path) {
     }
     else if(*itr == "output") {
       if (auto token = *(++itr); token[0] == '[') {
-        int bus_size = std::stoi(token.substr(1));
-        if (bus_size <= 0) {
-          OT_LOGE("Bus size <= 0!!");
+        int bus_MSB = std::stoi(token.substr(1));
+        int bus_LSB = 0;
+        itr++;
+        if (auto LSB = *(++itr); LSB != "0]") {
+          int found = LSB.rfind("]");
+          bus_LSB = std::stoi(LSB.substr(0, found));
+          assert(bus_LSB > 0);
         }
-        itr++; itr++; itr++; // ":", "0]", output name
-        for (int bus_idx = bus_size; bus_idx >= 0; bus_idx--) {
+        itr++; // output name
+        for (int bus_idx = bus_MSB; bus_idx >= bus_LSB; bus_idx--) {
           std::string output_name = *itr + "[" + std::to_string(bus_idx) + "]";
           OT_LOGD("ADD output: ", output_name);
           module.outputs.push_back(output_name);
@@ -156,12 +164,16 @@ Module read_verilog(const std::filesystem::path& path) {
     }
     else if(*itr == "wire") {
       if (auto token = *(++itr); token[0] == '[') {
-        int bus_size = std::stoi(token.substr(1));
-        if (bus_size <= 0) {
-          OT_LOGE("Bus size <= 0!!");
+        int bus_MSB = std::stoi(token.substr(1));
+        int bus_LSB = 0;
+        itr++;
+        if (auto LSB = *(++itr); LSB != "0]") {
+          int found = LSB.rfind("]");
+          bus_LSB = std::stoi(LSB.substr(0, found));
+          assert(bus_LSB > 0);
         }
-        itr++; itr++; itr++; // ":", "0]", output name
-        for (int bus_idx = bus_size; bus_idx >= 0; bus_idx--) {
+        itr++; // output name
+        for (int bus_idx = bus_MSB; bus_idx >= bus_LSB; bus_idx--) {
           std::string wire_name = *itr + "[" + std::to_string(bus_idx) + "]";
           OT_LOGD("ADD wire: ", wire_name);
           module.wires.push_back(wire_name);
